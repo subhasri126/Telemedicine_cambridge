@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useI18n } from '../../i18n';
 import { getPrescriptions, downloadPrescriptionPDF } from '../../services/prescriptionService';
 import { Prescription } from '../../types';
 import { FileText, Download, Truck, Calendar, ShieldCheck, Stethoscope } from 'lucide-react';
@@ -8,6 +9,7 @@ import { FileText, Download, Truck, Calendar, ShieldCheck, Stethoscope } from 'l
 export const PrescriptionsPage: React.FC = () => {
     const { patientData } = useAuth();
     const navigate = useNavigate();
+    const { t } = useI18n();
 
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
 
@@ -26,8 +28,8 @@ export const PrescriptionsPage: React.FC = () => {
                             <FileText className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="font-extrabold text-xl text-slate-900">Digital Prescriptions</h1>
-                            <p className="text-xs text-slate-500">Verified doctor prescriptions and printable PDF records</p>
+                            <h1 className="font-extrabold text-xl text-slate-900">{t('digitalPrescriptions')}</h1>
+                            <p className="text-xs text-slate-500">{t('verifiedPrescriptions')}</p>
                         </div>
                     </div>
                 </div>
@@ -35,8 +37,8 @@ export const PrescriptionsPage: React.FC = () => {
                 {prescriptions.length === 0 ? (
                     <div className="bg-white rounded-3xl p-12 text-center text-slate-500 space-y-2 border border-slate-200">
                         <FileText className="w-12 h-12 text-slate-300 mx-auto" />
-                        <p className="font-bold text-sm">No prescriptions available yet</p>
-                        <p className="text-xs">Complete a doctor consultation to receive your digital prescription.</p>
+                        <p className="font-bold text-sm">{t('noPrescriptions')}</p>
+                        <p className="text-xs">{t('completeConsultation')}</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
@@ -62,7 +64,7 @@ export const PrescriptionsPage: React.FC = () => {
                                             className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
                                         >
                                             <Download className="w-4 h-4" />
-                                            <span>Download PDF</span>
+                                            <span>{t('downloadPdf')}</span>
                                         </button>
 
                                         <button
@@ -70,30 +72,30 @@ export const PrescriptionsPage: React.FC = () => {
                                             className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
                                         >
                                             <Truck className="w-4 h-4" />
-                                            <span>Order Medicine Doorstep</span>
+                                            <span>{t('orderMedicine')}</span>
                                         </button>
                                     </div>
                                 </div>
 
                                 {/* Patient & Diagnosis Block */}
                                 <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs space-y-1">
-                                    <p><strong className="text-slate-700">Patient:</strong> {rx.patientName} ({rx.patientAge} Yrs)</p>
-                                    <p><strong className="text-slate-700">Diagnosis:</strong> {rx.diagnosis}</p>
-                                    <p><strong className="text-slate-700">Valid Until:</strong> {rx.validUntil}</p>
+                                    <p><strong className="text-slate-700">{t('patient')}:</strong> {rx.patientName} ({rx.patientAge} {t('years')})</p>
+                                    <p><strong className="text-slate-700">{t('diagnosis')}:</strong> {rx.diagnosis}</p>
+                                    <p><strong className="text-slate-700">{t('validUntil')}:</strong> {rx.validUntil}</p>
                                 </div>
 
                                 {/* Medication Items Table */}
                                 <div className="space-y-2">
-                                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Prescribed Medications</h4>
+                                    <h4 className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">{t('prescribedMedications')}</h4>
                                     <div className="overflow-x-auto">
                                         <table className="w-full text-left text-xs">
                                             <thead>
                                                 <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
-                                                    <th className="p-3 rounded-l-xl">Medicine</th>
-                                                    <th className="p-3">Dosage</th>
-                                                    <th className="p-3">Frequency</th>
-                                                    <th className="p-3">Duration</th>
-                                                    <th className="p-3 rounded-r-xl">Instructions</th>
+                                                    <th className="p-3 rounded-l-xl">{t('medicine')}</th>
+                                                    <th className="p-3">{t('dosage')}</th>
+                                                    <th className="p-3">{t('frequency')}</th>
+                                                    <th className="p-3">{t('duration')}</th>
+                                                    <th className="p-3 rounded-r-xl">{t('instructions')}</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-slate-100">
@@ -103,7 +105,7 @@ export const PrescriptionsPage: React.FC = () => {
                                                         <td className="p-3 text-slate-700">{item.dosage}</td>
                                                         <td className="p-3 text-slate-700">{item.frequency}</td>
                                                         <td className="p-3 text-slate-700">{item.duration}</td>
-                                                        <td className="p-3 text-slate-500 italic">{item.instructions || 'As directed'}</td>
+                                                        <td className="p-3 text-slate-500 italic">{item.instructions || t('asDirected')}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>

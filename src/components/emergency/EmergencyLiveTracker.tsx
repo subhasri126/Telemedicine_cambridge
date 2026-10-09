@@ -1,5 +1,6 @@
 import React from 'react';
 import { EmergencyCase, EmergencyStatus } from '../../types';
+import { useI18n } from '../../i18n';
 import { ShieldAlert, Stethoscope, Building2, Truck, CheckCircle2, Clock, MapPin, User } from 'lucide-react';
 
 interface EmergencyLiveTrackerProps {
@@ -13,13 +14,14 @@ export const EmergencyLiveTracker: React.FC<EmergencyLiveTrackerProps> = ({
     onAdvanceStatus,
     isDoctorView = false
 }) => {
+    const { t } = useI18n();
     const steps: { status: EmergencyStatus; label: string; icon: any }[] = [
-        { status: 'SOS Raised', label: 'SOS Raised', icon: ShieldAlert },
-        { status: 'Doctor Alerted', label: 'Doctor Connected', icon: Stethoscope },
-        { status: 'Hospital Alerted', label: 'Hospital Notified', icon: Building2 },
-        { status: 'Transport Assigned', label: 'Ambulance Dispatched', icon: Truck },
-        { status: 'Hospital Accepted', label: 'Bed Reserved', icon: CheckCircle2 },
-        { status: 'Patient Arrived', label: 'Patient Arrived', icon: MapPin },
+        { status: 'SOS Raised', label: t('sosRaised'), icon: ShieldAlert },
+        { status: 'Doctor Alerted', label: t('doctorConnected'), icon: Stethoscope },
+        { status: 'Hospital Alerted', label: t('hospitalNotified'), icon: Building2 },
+        { status: 'Transport Assigned', label: t('ambulanceDispatched'), icon: Truck },
+        { status: 'Hospital Accepted', label: t('bedReserved'), icon: CheckCircle2 },
+        { status: 'Patient Arrived', label: t('patientArrived'), icon: MapPin },
     ];
 
     const currentIdx = steps.findIndex((s) => s.status === emergencyCase.status);
@@ -36,14 +38,14 @@ export const EmergencyLiveTracker: React.FC<EmergencyLiveTrackerProps> = ({
                     <div>
                         <div className="flex items-center gap-2">
                             <h3 className="font-extrabold text-base text-slate-900">
-                                ACTIVE EMERGENCY CASE #{emergencyCase.caseNumber}
+                                {t('activeEmergencyCase')} #{emergencyCase.caseNumber}
                             </h3>
                             <span className="text-[10px] bg-rose-600 text-white font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
                                 {emergencyCase.status}
                             </span>
                         </div>
                         <p className="text-xs text-slate-600 mt-0.5">
-                            Patient: <span className="font-bold text-slate-800">{emergencyCase.patientName}</span> ({emergencyCase.patientAge} Yrs) — Location: <span className="font-semibold">{emergencyCase.location}</span>
+                            {t('patient')}: <span className="font-bold text-slate-800">{emergencyCase.patientName}</span> ({emergencyCase.patientAge} {t('years')}) — {t('location')}: <span className="font-semibold">{emergencyCase.location}</span>
                         </p>
                     </div>
                 </div>
@@ -51,8 +53,8 @@ export const EmergencyLiveTracker: React.FC<EmergencyLiveTrackerProps> = ({
                 <div className="bg-white px-4 py-2 rounded-2xl border border-rose-200 flex items-center gap-3 shadow-sm">
                     <Clock className="w-5 h-5 text-rose-600 animate-spin" />
                     <div>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase block">Ambulance ETA</span>
-                        <span className="text-sm font-extrabold text-rose-600">{emergencyCase.etaMinutes} Minutes</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase block">{t('ambulanceEta')}</span>
+                        <span className="text-sm font-extrabold text-rose-600">{emergencyCase.etaMinutes} {t('minutes')}</span>
                     </div>
                 </div>
             </div>
@@ -113,7 +115,7 @@ export const EmergencyLiveTracker: React.FC<EmergencyLiveTrackerProps> = ({
             {/* Doctor Action Controls if in Doctor View */}
             {isDoctorView && onAdvanceStatus && currentIdx < steps.length - 1 && (
                 <div className="pt-2 border-t border-rose-100 flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-700">Advance Emergency Workflow:</span>
+                    <span className="text-xs font-bold text-slate-700">{t('advanceEmergencyWorkflow')}:</span>
                     <button
                         onClick={() => onAdvanceStatus(steps[currentIdx + 1].status)}
                         className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-sm transition-all"

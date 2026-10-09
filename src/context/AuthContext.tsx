@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, PatientProfile, DoctorProfile } from '../types';
-import { getLocalDB, saveLocalDB } from '../lib/supabase';
+import { apiRequest, setAuthToken, removeAuthToken, getAuthToken } from '../lib/apiClient';
 
 interface AuthContextType {
     user: UserProfile | null;
@@ -8,12 +8,14 @@ interface AuthContextType {
     doctorData: DoctorProfile | null;
     role: 'patient' | 'doctor' | null;
     isLoading: boolean;
-    login: (email: string, role: 'patient' | 'doctor') => Promise<boolean>;
-    loginAsDemoPatient: () => void;
-    loginAsDemoDoctor: () => void;
+    verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED' | null;
+    login: (email: string, password: string, selectedRole: 'patient' | 'doctor') => Promise<boolean>;
+    loginAsDemoPatient: () => Promise<boolean>;
+    loginAsDemoDoctor: () => Promise<boolean>;
     logout: () => void;
-    registerPatient: (details: Partial<PatientProfile> & { fullName: string; email: string }) => Promise<boolean>;
-    registerDoctor: (details: Partial<DoctorProfile> & { fullName: string; email: string }) => Promise<boolean>;
+    registerPatient: (formData: any) => Promise<boolean>;
+    registerDoctor: (formData: FormData) => Promise<boolean>;
+    verifyDoctorDemoAdmin: (doctorId?: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,110 +25,110 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [patientData, setPatientData] = useState<PatientProfile | null>(null);
     const [doctorData, setDoctorData] = useState<DoctorProfile | null>(null);
     const [role, setRole] = useState<'patient' | 'doctor' | null>(null);
+    const [verificationStatus, setVerificationStatus] = useState<'PENDING' | 'VERIFIED' | 'REJECTED' | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    useEffect(() => {
-        // Check saved session in localStorage
-        const savedSession = localStorage.getItem('carebridge_session');
-        const db = getLocalDB();
-
-        if (savedSession) {
-            try {
-                const parsed = JSON.parse(savedSession);
-                if (parsed.role === 'patient') {
-                    const p = db.patients.find((item: PatientProfile) => item.id === parsed.patientId) || db.patients[0];
-                    setUser({
-                        id: p.profileId,
-                        email: p.email,
-                        fullName: p.fullName,
-                        role: 'patient',
-                        phone: p.emergencyContact?.phone
-                    });
-                    setPatientData(p);
-                    setRole('patient');
-                } else if (parsed.role === 'doctor') {
-                    const d = db.doctors.find((item: DoctorProfile) => item.id === parsed.doctorId) || db.doctors[0];
-                    setUser({
-                        id: d.profileId,
-                        email: 'doctor.arun@carebridge.org',
-                        fullName: d.fullName,
-                        role: 'doctor',
-                        avatarUrl: d.avatarUrl
-                    });
-                    setDoctorData(d);
-                    setRole('doctor');
-                }
-            } catch (e) {
-                console.error('Session load error', e);
-            }
-        } else {
-            // Default to logged-in Patient (Priya) for seamless instant experience
-            const defaultPatient = db.patients[0];
-            setUser({
-                id: defaultPatient.profileId,
-                email: defaultPatient.email,
-                fullName: defaultPatient.fullName,
-                role: 'patient'
-            });
-            setPatientData(defaultPatient);
-            setRole('patient');
+    const loadCurrentUser = async () => {
+        const token = getAuthToken();
+        if (!token) {
+            setIsLoading(false);
+            return;
         }
 
-        setIsLoading(false);
+        try {
+            const data = await apiRequest('/auth/me');
+            if (data.role === 'patient') {
+                setUser({
+                    id: data.id,
+                    email: data.email,
+                    fullName: data.fullName,
+                    role: 'patient',
+                    phone: data.phone
+                });
+                setPatientData({
+                    id: data.profileId,
+                    profileId: data.profileId,
+                    fullName: data.fullName,
+                    email: data.email,
+                    age: data.age || 42,
+                    gender: data.gender || 'Female',
+                    bloodGroup: 'O+',
+                    location: `${data.village || 'Kollumangudi'}, ${data.district || 'Nagapattinam'}`,
+                    medicalHistory: ['Hypertension screening'],
+                    currentMedications: [],
+                    emergencyContact: {
+                        name: data.emergencyContactName || 'Emergency Contact',
+                        phone: data.emergencyContactPhone || '+91 94432 10988',
+                        relation: 'Family'
+                    }
+                });
+                setRole('patient');
+                setVerificationStatus(null);
+            } else if (data.role === 'doctor') {
+                setUser({
+                    id: data.id,
+                    email: data.email,
+                    fullName: data.fullName,
+                    role: 'doctor'
+                });
+                setDoctorData({
+                    id: data.profileId,
+                    profileId: data.profileId,
+                    fullName: data.fullName,
+                    specialty: data.specialty || 'General Medicine',
+                    qualification: data.qualification || 'MBBS, MD',
+                    experienceYears: data.experienceYears || 10,
+                    languages: ['English', 'Tamil'],
+                    isAvailable: Boolean(data.isOnline),
+                    rating: 4.9,
+                    currentQueueCount: 2,
+                    hospitalAffiliation: data.hospitalClinic || 'District Health Headquarters',
+                    consultationFee: 0,
+                    avatarUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80'
+                });
+                setRole('doctor');
+                setVerificationStatus(data.verificationStatus || 'PENDING');
+            }
+        } catch (error) {
+            console.warn('Auto auth failed, clearing token:', error);
+            removeAuthToken();
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadCurrentUser();
     }, []);
 
-    const loginAsDemoPatient = () => {
-        const db = getLocalDB();
-        const p = db.patients[0];
-        const u: UserProfile = {
-            id: p.profileId,
-            email: p.email,
-            fullName: p.fullName,
-            role: 'patient',
-            phone: p.emergencyContact?.phone
-        };
-        setUser(u);
-        setPatientData(p);
-        setDoctorData(null);
-        setRole('patient');
-        localStorage.setItem('carebridge_session', JSON.stringify({ role: 'patient', patientId: p.id }));
-    };
-
-    const loginAsDemoDoctor = () => {
-        const db = getLocalDB();
-        const d = db.doctors[0];
-        const u: UserProfile = {
-            id: d.profileId,
-            email: 'dr.arun@carebridge.org',
-            fullName: d.fullName,
-            role: 'doctor',
-            avatarUrl: d.avatarUrl
-        };
-        setUser(u);
-        setDoctorData(d);
-        setPatientData(null);
-        setRole('doctor');
-        localStorage.setItem('carebridge_session', JSON.stringify({ role: 'doctor', doctorId: d.id }));
-    };
-
-    const login = async (email: string, selectedRole: 'patient' | 'doctor'): Promise<boolean> => {
+    const login = async (email: string, password: string, selectedRole: 'patient' | 'doctor'): Promise<boolean> => {
         setIsLoading(true);
-        const db = getLocalDB();
-        if (selectedRole === 'patient') {
-            const p = db.patients.find((item: PatientProfile) => item.email.toLowerCase() === email.toLowerCase()) || db.patients[0];
-            setUser({ id: p.profileId, email: p.email, fullName: p.fullName, role: 'patient' });
-            setPatientData(p);
-            setRole('patient');
-            localStorage.setItem('carebridge_session', JSON.stringify({ role: 'patient', patientId: p.id }));
-        } else {
-            const d = db.doctors.find((item: DoctorProfile) => item.fullName.toLowerCase().includes(email.toLowerCase())) || db.doctors[0];
-            setUser({ id: d.profileId, email: email, fullName: d.fullName, role: 'doctor', avatarUrl: d.avatarUrl });
-            setDoctorData(d);
-            setRole('doctor');
-            localStorage.setItem('carebridge_session', JSON.stringify({ role: 'doctor', doctorId: d.id }));
+        try {
+            const endpoint = selectedRole === 'patient' ? '/auth/patient/login' : '/auth/doctor/login';
+            const res = await apiRequest(endpoint, {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+
+            if (res.token) {
+                setAuthToken(res.token);
+                await loadCurrentUser();
+                return true;
+            }
+            return false;
+        } catch (err) {
+            throw err;
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
-        return true;
+    };
+
+    const loginAsDemoPatient = async (): Promise<boolean> => {
+        return login('priya@carebridge.org', 'Password123!', 'patient');
+    };
+
+    const loginAsDemoDoctor = async (): Promise<boolean> => {
+        return login('arun@carebridge.org', 'Password123!', 'doctor');
     };
 
     const logout = () => {
@@ -134,63 +136,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setPatientData(null);
         setDoctorData(null);
         setRole(null);
-        localStorage.removeItem('carebridge_session');
+        setVerificationStatus(null);
+        removeAuthToken();
     };
 
-    const registerPatient = async (details: Partial<PatientProfile> & { fullName: string; email: string }): Promise<boolean> => {
-        const db = getLocalDB();
-        const newPatient: PatientProfile = {
-            id: `patient-${Date.now()}`,
-            profileId: `profile-${Date.now()}`,
-            fullName: details.fullName,
-            email: details.email,
-            age: details.age || 35,
-            gender: details.gender || 'Other',
-            bloodGroup: details.bloodGroup || 'B+',
-            location: details.location || 'Rural Village Centre',
-            medicalHistory: details.medicalHistory || [],
-            currentMedications: details.currentMedications || [],
-            emergencyContact: details.emergencyContact || {
-                name: 'Family Contact',
-                phone: '+91 90000 00000',
-                relation: 'Relative'
+    const registerPatient = async (formData: any): Promise<boolean> => {
+        setIsLoading(true);
+        try {
+            const res = await apiRequest('/auth/patient/register', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+
+            if (res.token) {
+                setAuthToken(res.token);
+                await loadCurrentUser();
+                return true;
             }
-        };
-        db.patients.push(newPatient);
-        saveLocalDB(db);
-
-        setUser({ id: newPatient.profileId, email: newPatient.email, fullName: newPatient.fullName, role: 'patient' });
-        setPatientData(newPatient);
-        setRole('patient');
-        localStorage.setItem('carebridge_session', JSON.stringify({ role: 'patient', patientId: newPatient.id }));
-        return true;
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const registerDoctor = async (details: Partial<DoctorProfile> & { fullName: string; email: string }): Promise<boolean> => {
-        const db = getLocalDB();
-        const newDoctor: DoctorProfile = {
-            id: `doctor-${Date.now()}`,
-            profileId: `profile-${Date.now()}`,
-            fullName: details.fullName,
-            specialty: details.specialty || 'General Medicine',
-            qualification: details.qualification || 'MBBS',
-            experienceYears: details.experienceYears || 5,
-            languages: details.languages || ['English', 'Tamil'],
-            isAvailable: true,
-            rating: 4.8,
-            currentQueueCount: 0,
-            hospitalAffiliation: details.hospitalAffiliation || 'District Care Hospital',
-            consultationFee: 0,
-            avatarUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=400&q=80'
-        };
-        db.doctors.push(newDoctor);
-        saveLocalDB(db);
+    const registerDoctor = async (formData: FormData): Promise<boolean> => {
+        setIsLoading(true);
+        try {
+            const res = await apiRequest('/auth/doctor/register', {
+                method: 'POST',
+                body: formData
+            });
 
-        setUser({ id: newDoctor.profileId, email: details.email, fullName: newDoctor.fullName, role: 'doctor' });
-        setDoctorData(newDoctor);
-        setRole('doctor');
-        localStorage.setItem('carebridge_session', JSON.stringify({ role: 'doctor', doctorId: newDoctor.id }));
-        return true;
+            if (res.token) {
+                setAuthToken(res.token);
+                await loadCurrentUser();
+                return true;
+            }
+            return false;
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const verifyDoctorDemoAdmin = async (doctorId?: string): Promise<boolean> => {
+        const targetId = doctorId || doctorData?.id || user?.id;
+        if (!targetId) return false;
+
+        try {
+            const res = await apiRequest(`/doctors/verify/${targetId}`, {
+                method: 'POST',
+                body: JSON.stringify({ status: 'VERIFIED' })
+            });
+
+            if (res.verificationStatus) {
+                setVerificationStatus('VERIFIED');
+                if (doctorData) {
+                    setDoctorData({ ...doctorData });
+                }
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error('Demo admin verification failed:', e);
+            return false;
+        }
     };
 
     return (
@@ -201,12 +210,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 doctorData,
                 role,
                 isLoading,
+                verificationStatus,
                 login,
                 loginAsDemoPatient,
                 loginAsDemoDoctor,
                 logout,
                 registerPatient,
-                registerDoctor
+                registerDoctor,
+                verifyDoctorDemoAdmin
             }}
         >
             {children}

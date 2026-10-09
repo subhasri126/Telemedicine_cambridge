@@ -2,26 +2,33 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { CareBridgeLogo } from '../../components/branding/CareBridgeLogo';
-import { Stethoscope, User, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Stethoscope, User, ArrowRight } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
     const { login, loginAsDemoPatient, loginAsDemoDoctor } = useAuth();
     const navigate = useNavigate();
 
-    const [email, setEmail] = useState('priya@ruralhealth.org');
-    const [password, setPassword] = useState('password123');
+    const [email, setEmail] = useState('priya@carebridge.org');
+    const [password, setPassword] = useState('Password123!');
     const [role, setRole] = useState<'patient' | 'doctor'>('patient');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
-        await login(email, role);
-        setLoading(false);
-        if (role === 'doctor') {
-            navigate('/doctor/dashboard');
-        } else {
-            navigate('/patient/dashboard');
+        setError(null);
+        try {
+            await login(email, password, role);
+            if (role === 'doctor') {
+                navigate('/doctor/dashboard');
+            } else {
+                navigate('/patient/dashboard');
+            }
+        } catch (err: any) {
+            setError(err.message || 'Login failed.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -35,15 +42,21 @@ export const LoginPage: React.FC = () => {
                     <p className="text-xs text-slate-500">Sign in to your CareBridge Rural account</p>
                 </div>
 
-                {/* Hackathon Quick Demo Login Selector */}
+                {error && (
+                    <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs font-semibold border border-red-200">
+                        {error}
+                    </div>
+                )}
+
+                {/* Quick Demo Logins */}
                 <div className="bg-brand-50/80 p-3 rounded-2xl border border-brand-200 text-center space-y-2">
                     <span className="text-[11px] font-bold text-brand-800 uppercase tracking-wider block">
-                        ⚡ Quick Hackathon Demo Logins:
+                        ⚡ Quick Demo Logins:
                     </span>
                     <div className="grid grid-cols-2 gap-2">
                         <button
-                            onClick={() => {
-                                loginAsDemoPatient();
+                            onClick={async () => {
+                                await loginAsDemoPatient();
                                 navigate('/patient/dashboard');
                             }}
                             className="py-2 px-3 bg-white hover:bg-brand-100 text-brand-700 font-bold text-xs rounded-xl border border-brand-200 transition-colors shadow-sm"
@@ -51,8 +64,8 @@ export const LoginPage: React.FC = () => {
                             Patient (Priya)
                         </button>
                         <button
-                            onClick={() => {
-                                loginAsDemoDoctor();
+                            onClick={async () => {
+                                await loginAsDemoDoctor();
                                 navigate('/doctor/dashboard');
                             }}
                             className="py-2 px-3 bg-white hover:bg-teal-100 text-teal-700 font-bold text-xs rounded-xl border border-teal-200 transition-colors shadow-sm"
@@ -70,7 +83,7 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => {
                                 setRole('patient');
-                                setEmail('priya@ruralhealth.org');
+                                setEmail('priya@carebridge.org');
                             }}
                             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${role === 'patient' ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-600'
                                 }`}
@@ -82,7 +95,7 @@ export const LoginPage: React.FC = () => {
                             type="button"
                             onClick={() => {
                                 setRole('doctor');
-                                setEmail('dr.arun@carebridge.org');
+                                setEmail('arun@carebridge.org');
                             }}
                             className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${role === 'doctor' ? 'bg-white text-teal-700 shadow-sm' : 'text-slate-600'
                                 }`}

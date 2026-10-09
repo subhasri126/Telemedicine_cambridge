@@ -11,8 +11,11 @@ import { EmergencySOSModal } from './components/emergency/EmergencySOSModal';
 
 // Pages
 import { LandingPage } from './pages/LandingPage';
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
+import { RoleSelectionPage } from './pages/auth/RoleSelectionPage';
+import { PatientLoginPage } from './pages/auth/PatientLoginPage';
+import { PatientRegisterPage } from './pages/auth/PatientRegisterPage';
+import { DoctorLoginPage } from './pages/auth/DoctorLoginPage';
+import { DoctorRegisterPage } from './pages/auth/DoctorRegisterPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 
 import { PatientDashboard } from './pages/patient/PatientDashboard';
@@ -27,18 +30,42 @@ import { CreatePrescriptionPage } from './pages/doctor/CreatePrescriptionPage';
 import { HospitalHandoffPage } from './pages/doctor/HospitalHandoffPage';
 
 import { ConsultationRoomPage } from './pages/consultation/ConsultationRoomPage';
-import { Bot, ShieldAlert } from 'lucide-react';
+import { SmsDevelopmentTestPage } from './pages/patient/SmsDevelopmentTestPage';
+import { Bot } from 'lucide-react';
+import { I18nProvider, useI18n } from './i18n';
 
 export function App() {
-    const [language, setLanguage] = useState<'en' | 'ta'>('en');
     const [isAIModalOpen, setIsAIModalOpen] = useState(false);
     const [isSOSModalOpen, setIsSOSModalOpen] = useState(false);
 
     return (
         <BrowserRouter>
             <AuthProvider>
-                <NetworkProvider>
-                    <CareJourneyProvider>
+                <I18nProvider>
+                    <NetworkProvider>
+                        <CareJourneyProvider>
+                            <AppContent
+                                isAIModalOpen={isAIModalOpen}
+                                setIsAIModalOpen={setIsAIModalOpen}
+                                isSOSModalOpen={isSOSModalOpen}
+                                setIsSOSModalOpen={setIsSOSModalOpen}
+                            />
+                        </CareJourneyProvider>
+                    </NetworkProvider>
+                </I18nProvider>
+            </AuthProvider>
+        </BrowserRouter>
+    );
+}
+
+function AppContent({ isAIModalOpen, setIsAIModalOpen, isSOSModalOpen, setIsSOSModalOpen }: {
+    isAIModalOpen: boolean;
+    setIsAIModalOpen: (open: boolean) => void;
+    isSOSModalOpen: boolean;
+    setIsSOSModalOpen: (open: boolean) => void;
+}) {
+    const { language, setLanguage } = useI18n();
+    return (
                         <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 font-sans antialiased selection:bg-brand-500 selection:text-white">
 
                             {/* Navigation Bar */}
@@ -52,7 +79,7 @@ export function App() {
                             {/* Main Content Router */}
                             <main className="flex-1">
                                 <Routes>
-                                    {/* Public Routes */}
+                                    {/* Public & Authentication Routes */}
                                     <Route
                                         path="/"
                                         element={
@@ -62,8 +89,12 @@ export function App() {
                                             />
                                         }
                                     />
-                                    <Route path="/login" element={<LoginPage />} />
-                                    <Route path="/register" element={<RegisterPage />} />
+                                    <Route path="/login" element={<RoleSelectionPage mode="login" />} />
+                                    <Route path="/register" element={<RoleSelectionPage mode="register" />} />
+                                    <Route path="/patient/login" element={<PatientLoginPage />} />
+                                    <Route path="/patient/register" element={<PatientRegisterPage />} />
+                                    <Route path="/doctor/login" element={<DoctorLoginPage />} />
+                                    <Route path="/doctor/register" element={<DoctorRegisterPage />} />
                                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
                                     {/* Patient Protected Routes */}
@@ -148,6 +179,15 @@ export function App() {
 
                                     {/* Consultation Room */}
                                     <Route path="/consultation/:consultationId" element={<ConsultationRoomPage />} />
+                                    <Route path="/consultation" element={<ConsultationRoomPage />} />
+                                    <Route
+                                        path="/sms-test"
+                                        element={
+                                            <ProtectedRoute allowedRole="patient">
+                                                <SmsDevelopmentTestPage />
+                                            </ProtectedRoute>
+                                        }
+                                    />
 
                                     {/* Fallback Catch-all */}
                                     <Route path="*" element={<Navigate to="/" replace />} />
@@ -187,10 +227,6 @@ export function App() {
                             />
 
                         </div>
-                    </CareJourneyProvider>
-                </NetworkProvider>
-            </AuthProvider>
-        </BrowserRouter>
     );
 }
 

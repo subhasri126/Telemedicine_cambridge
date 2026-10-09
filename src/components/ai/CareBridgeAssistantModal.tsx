@@ -7,7 +7,8 @@ import {
 import {
     startSpeechRecognition,
     speakText,
-    isSpeechRecognitionSupported
+    isSpeechRecognitionSupported,
+    describeVoiceError
 } from '../../services/voiceService';
 import {
     Bot,
@@ -25,6 +26,7 @@ import {
     Trash2,
     AlertCircle
 } from 'lucide-react';
+import { useI18n } from '../../i18n';
 
 interface CareBridgeAssistantModalProps {
     isOpen: boolean;
@@ -41,6 +43,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
     setLanguage,
     onOpenSOSModal
 }) => {
+    const { t } = useI18n();
     const navigate = useNavigate();
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,6 +51,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isTyping, setIsTyping] = useState(false);
     const [isListening, setIsListening] = useState(false);
+    const [isRequestingPermission, setIsRequestingPermission] = useState(false);
     const [voiceError, setVoiceError] = useState<string | null>(null);
     const [activeSpeechRecognition, setActiveSpeechRecognition] = useState<any>(null);
 
@@ -70,9 +74,20 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isTyping]);
 
+    useEffect(() => () => {
+        if (activeSpeechRecognition) {
+            try {
+                activeSpeechRecognition.abort();
+            } catch {
+                // Recognition may already have ended.
+            }
+        }
+    }, [activeSpeechRecognition]);
+
     if (!isOpen) return null;
 
     const handleSendMessage = async (customText?: string) => {
+        if (isTyping) return;
         const textToSend = customText || inputQuery;
         if (!textToSend.trim()) return;
 
@@ -86,42 +101,42 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
         setMessages((prev) => [...prev, userMsg]);
         setInputQuery('');
         setIsTyping(true);
-
-        // Call AI Assistant Service
-        setTimeout(async () => {
-            const responseMsg = await processAIChatMessage(textToSend, language);
+        try {
+            const responseMsg = await processAIChatMessage(textToSend, language, messages);
             setMessages((prev) => [...prev, responseMsg]);
-            setIsTyping(false);
-
-            // Read aloud response
             speakText(responseMsg.text, language);
-        }, 600);
+        } finally {
+            setIsTyping(false);
+        }
     };
 
-    const handleStartVoice = () => {
+    const handleStartVoice = async () => {
         setVoiceError(null);
         if (!isSpeechRecognitionSupported()) {
-            setVoiceError('Voice input is not available in this browser. You can continue using text.');
+            setVoiceError(describeVoiceError('unsupported'));
             return;
         }
 
-        setIsListening(true);
-        const recognition = startSpeechRecognition(
+        setIsRequestingPermission(true);
+        const recognition = await startSpeechRecognition(
             language,
             (transcript) => {
-                setIsListening(false);
                 setInputQuery(transcript);
-                handleSendMessage(transcript);
             },
             (err) => {
                 setIsListening(false);
-                setVoiceError(err);
+                setIsRequestingPermission(false);
+                setVoiceError(describeVoiceError(err));
             },
             () => {
                 setIsListening(false);
+                setIsRequestingPermission(false);
             }
         );
+        setIsRequestingPermission(false);
+        if (!recognition) return;
         setActiveSpeechRecognition(recognition);
+        setIsListening(true);
     };
 
     const handleStopVoice = () => {
@@ -133,6 +148,8 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
             }
         }
         setIsListening(false);
+        setIsRequestingPermission(false);
+        setActiveSpeechRecognition(null);
     };
 
     const handleActionButton = (action: string) => {
@@ -174,12 +191,12 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-base">CareBridge Assistant</h3>
+                                <h3 className="font-bold text-base">{t('assistant')}</h3>
                                 <span className="text-[10px] bg-emerald-400/20 text-emerald-100 font-semibold px-2 py-0.5 rounded-full border border-emerald-300/30">
-                                    AI Guidance
+                                    {t('aiGuidance')}
                                 </span>
                             </div>
-                            <p className="text-xs text-brand-100">Smart Voice & Symptom Triage</p>
+                            <p className="text-xs text-brand-100">{t('smartVoice')}</p>
                         </div>
                     </div>
 
@@ -187,7 +204,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                         <button
                             onClick={() => setLanguage(language === 'en' ? 'ta' : 'en')}
                             className="text-xs bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 transition-all border border-white/20"
-                            title="Switch Language"
+                            title={t('switchLanguage')}
                         >
                             <Globe className="w-3.5 h-3.5" />
                             <span>{language === 'en' ? 'தமிழ்' : 'EN'}</span>
@@ -195,7 +212,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                         <button
                             onClick={() => setMessages([])}
                             className="p-1.5 rounded-lg text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                            title="Clear Chat"
+                            title={t('clearChat')}
                         >
                             <Trash2 className="w-4 h-4" />
                         </button>
@@ -211,7 +228,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                 {/* Safety Disclaimer Banner */}
                 <div className="bg-amber-50 border-b border-amber-100 px-4 py-2 flex items-center gap-2 text-xs text-amber-800">
                     <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-                    <span>AI-assisted triage guidance only. Does not replace a qualified medical professional.</span>
+                    <span>{t('assistantDisclaimer')}</span>
                 </div>
 
                 {/* Voice Listening Active Wave Banner */}
@@ -219,13 +236,13 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                     <div className="bg-brand-50 border-b border-brand-200 px-4 py-3 flex items-center justify-between text-xs text-brand-800 animate-pulse">
                         <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-brand-600 animate-ping" />
-                            <span className="font-bold">Listening in {language === 'ta' ? 'Tamil' : 'English'}... Speak now</span>
+                            <span className="font-bold">{t('listeningIn', { language: language === 'ta' ? 'Tamil' : 'English' })}</span>
                         </div>
                         <button
                             onClick={handleStopVoice}
                             className="text-xs text-rose-600 font-bold hover:underline"
                         >
-                            Stop Microphone
+                            {t('stopMicrophone')}
                         </button>
                     </div>
                 )}
@@ -286,7 +303,7 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                     {isTyping && (
                         <div className="flex items-center gap-2 text-xs text-slate-400 bg-white border border-slate-200 px-3 py-2 rounded-xl w-fit">
                             <Sparkles className="w-4 h-4 text-brand-500 animate-spin" />
-                            <span>CareBridge Assistant is thinking...</span>
+                            <span>{t('aiThinking')}</span>
                         </div>
                     )}
 
@@ -307,26 +324,34 @@ export const CareBridgeAssistantModal: React.FC<CareBridgeAssistantModalProps> =
                 </div>
 
                 {/* Input Bar */}
-                <div className="p-3 bg-white border-t border-slate-200 flex items-center gap-2">
+                <div className="relative p-3 bg-white border-t border-slate-200 flex items-center gap-2">
 
                     {/* Microphone Button */}
                     <button
                         onClick={isListening ? handleStopVoice : handleStartVoice}
+                        disabled={isRequestingPermission || isTyping}
                         className={`p-2.5 rounded-xl border transition-all ${isListening
                                 ? 'bg-rose-600 text-white border-rose-600 animate-bounce'
                                 : 'bg-slate-100 hover:bg-brand-50 text-slate-700 border-slate-200 hover:border-brand-300'
                             }`}
-                        title="Speak (Voice Assistant)"
+                        title={isRequestingPermission ? t('requestingPermission') : isListening ? t('stopListening') : t('startVoice')}
+                        aria-label={isRequestingPermission ? t('requestingPermission') : isListening ? t('stopListening') : t('startVoice')}
                     >
                         {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5 text-brand-600" />}
                     </button>
+
+                    {(isListening || isRequestingPermission) && (
+                        <span className="absolute bottom-[4.5rem] left-4 rounded-lg bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-800 shadow-sm">
+                            {isRequestingPermission ? t('requestingPermission') : t('listening')}
+                        </span>
+                    )}
 
                     <input
                         type="text"
                         value={inputQuery}
                         onChange={(e) => setInputQuery(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder={language === 'ta' ? 'இங்கே கேட்கவும்...' : 'Type or speak your symptom/request...'}
+                        placeholder={t('typePrompt')}
                         className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:bg-white"
                     />
 

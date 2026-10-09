@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useI18n } from '../../i18n';
 import { CareJourneyTracker } from '../../components/care-journey/CareJourneyTracker';
 import { EmergencyLiveTracker } from '../../components/emergency/EmergencyLiveTracker';
 import { getActiveEmergencyCase } from '../../services/emergencyService';
@@ -36,6 +37,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
     language
 }) => {
     const { user, patientData } = useAuth();
+    const { t } = useI18n();
     const navigate = useNavigate();
 
     const [activeSOSCase, setActiveSOSCase] = useState<EmergencyCase | null>(null);
@@ -73,10 +75,10 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                     <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                         <div className="space-y-1.5">
                             <span className="text-xs text-brand-100 font-bold uppercase tracking-wider bg-white/10 px-3 py-1 rounded-full border border-white/20">
-                                {language === 'ta' ? 'கிராமப்புற நோயாளி போர்ட்டல்' : 'Rural Patient Portal'}
+                                {t('ruralPatientPortal')}
                             </span>
                             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight pt-1">
-                                {language === 'ta' ? 'வணக்கம்,' : 'Good Morning,'} {patientData?.fullName || user?.fullName || 'Priya'}
+                                {t('goodMorning')}, {patientData?.fullName || user?.fullName || 'Priya'}
                             </h1>
                             <p className="text-xs sm:text-sm text-brand-100 flex items-center gap-1.5">
                                 <MapPin className="w-3.5 h-3.5 text-brand-200" />
@@ -90,7 +92,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                 className="px-4 py-2.5 rounded-2xl bg-white text-brand-700 hover:bg-brand-50 font-extrabold text-xs shadow-sm transition-all flex items-center gap-1.5"
                             >
                                 <Bot className="w-4 h-4 text-brand-600" />
-                                <span>Ask CareBridge Assistant</span>
+                                <span>{t('askAssistant')}</span>
                             </button>
 
                             <button
@@ -98,7 +100,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                 className="px-4 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-emergency transition-all flex items-center gap-1.5 animate-pulse"
                             >
                                 <ShieldAlert className="w-4 h-4" />
-                                <span>Emergency SOS</span>
+                                <span>{t('emergencySOS')}</span>
                             </button>
                         </div>
                     </div>
@@ -112,12 +114,12 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                 {/* Quick Action Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
                     {[
-                        { label: 'AI Assistant', desc: 'Voice & text triage', icon: Bot, action: onOpenAIModal, color: 'bg-sky-50 border-sky-200 text-sky-800' },
-                        { label: 'Health Assessment', desc: 'Multi-step check', icon: Activity, path: '/patient/health-check', color: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
-                        { label: 'Find Doctor', desc: 'Match specialists', icon: Stethoscope, path: '/patient/doctors', color: 'bg-brand-50 border-brand-200 text-brand-800' },
-                        { label: 'Consultation Room', desc: 'WebRTC video call', icon: Video, path: '/consultation/consult-01', color: 'bg-teal-50 border-teal-200 text-teal-800' },
-                        { label: 'Prescriptions', desc: 'Download PDF', icon: FileText, path: '/patient/prescriptions', color: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
-                        { label: 'Medicine Delivery', desc: 'Doorstep order', icon: Truck, path: '/patient/pharmacy', color: 'bg-amber-50 border-amber-200 text-amber-800' },
+                        { label: t('aiAssistant'), desc: t('voiceTextTriage'), icon: Bot, action: onOpenAIModal, color: 'bg-sky-50 border-sky-200 text-sky-800' },
+                        { label: t('healthAssessment'), desc: t('multiStepCheck'), icon: Activity, path: '/patient/health-check', color: 'bg-emerald-50 border-emerald-200 text-emerald-800' },
+                        { label: t('findDoctor'), desc: t('matchSpecialists'), icon: Stethoscope, path: '/patient/doctors', color: 'bg-brand-50 border-brand-200 text-brand-800' },
+                        { label: t('consultationRoom'), desc: t('videoCall'), icon: Video, path: '/consultation/consult-01', color: 'bg-teal-50 border-teal-200 text-teal-800' },
+                        { label: t('prescriptions'), desc: t('downloadPdf'), icon: FileText, path: '/patient/prescriptions', color: 'bg-indigo-50 border-indigo-200 text-indigo-800' },
+                        { label: t('medicineDelivery'), desc: t('doorstepOrder'), icon: Truck, path: '/patient/pharmacy', color: 'bg-amber-50 border-amber-200 text-amber-800' },
                     ].map((item, idx) => {
                         const Icon = item.icon;
                         return (
@@ -147,42 +149,42 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                             <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                                 <Activity className="w-4 h-4 text-brand-600" />
-                                <span>MY RECENT VITALS & TRIAGE</span>
+                                <span>{t('myRecentVitals')}</span>
                             </h3>
                             <Link to="/patient/health-check" className="text-xs font-bold text-brand-600 hover:underline">
-                                New Health Assessment →
+                                {t('newHealthAssessment')} →
                             </Link>
                         </div>
 
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                <span className="text-[10px] font-semibold text-slate-500 block">SpO2 Level</span>
+                                <span className="text-[10px] font-semibold text-slate-500 block">{t('spo2Level')}</span>
                                 <span className="font-extrabold text-rose-600 text-base">89%</span>
-                                <span className="text-[9px] text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded block mt-1 w-fit font-bold">Low Oxygen</span>
+                                <span className="text-[9px] text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded block mt-1 w-fit font-bold">{t('lowOxygen')}</span>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                <span className="text-[10px] font-semibold text-slate-500 block">Pulse Rate</span>
+                                <span className="text-[10px] font-semibold text-slate-500 block">{t('pulseRate')}</span>
                                 <span className="font-extrabold text-amber-600 text-base">112 bpm</span>
-                                <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded block mt-1 w-fit font-bold">Elevated</span>
+                                <span className="text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded block mt-1 w-fit font-bold">{t('elevated')}</span>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                <span className="text-[10px] font-semibold text-slate-500 block">Temperature</span>
+                                <span className="text-[10px] font-semibold text-slate-500 block">{t('temperature')}</span>
                                 <span className="font-bold text-slate-800 text-base">101.4°F</span>
-                                <span className="text-[9px] text-slate-600 block mt-1">Fever Detected</span>
+                                <span className="text-[9px] text-slate-600 block mt-1">{t('feverDetected')}</span>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200/60">
-                                <span className="text-[10px] font-semibold text-slate-500 block">Blood Pressure</span>
+                                <span className="text-[10px] font-semibold text-slate-500 block">{t('bloodPressure')}</span>
                                 <span className="font-bold text-slate-800 text-base">135/88</span>
-                                <span className="text-[9px] text-slate-600 block mt-1">Pre-hypertension</span>
+                                <span className="text-[9px] text-slate-600 block mt-1">{t('preHypertension')}</span>
                             </div>
                         </div>
 
                         <div className="p-3 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-900 flex items-start gap-2">
                             <ShieldAlert className="w-4 h-4 text-rose-600 flex-shrink-0 mt-0.5" />
                             <div>
-                                <p className="font-bold">Latest AI Triage Alert: RED / HIGH PRIORITY</p>
+                                <p className="font-bold">{t('latestTriageAlert')}</p>
                                 <p className="text-[11px] text-rose-800 mt-0.5">
-                                    Respiratory tightness with low SpO2. Emergency doctor alert & transport dispatch active.
+                                    {t('respiratoryAlert')}
                                 </p>
                             </div>
                         </div>
@@ -194,14 +196,14 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                                 <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
                                     <Stethoscope className="w-4 h-4 text-teal-600" />
-                                    <span>UPCOMING CONSULTATION & RX</span>
+                                    <span>{t('upcomingConsultation')}</span>
                                 </h3>
-                                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">Active</span>
+                                <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">{t('active')}</span>
                             </div>
 
                             <div className="bg-teal-50/60 p-4 rounded-2xl border border-teal-200/80 flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">Assigned Specialist</span>
+                                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">{t('assignedSpecialist')}</span>
                                     <h4 className="font-extrabold text-slate-900 text-sm">Dr. Arun Kumar, MD</h4>
                                     <p className="text-xs text-slate-600">General Medicine & Critical Care • District Hospital</p>
                                 </div>
@@ -210,7 +212,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                     className="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5"
                                 >
                                     <Video className="w-4 h-4" />
-                                    <span>Join Session</span>
+                                    <span>{t('joinSession')}</span>
                                 </button>
                             </div>
 
@@ -219,7 +221,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                     <div className="flex items-center gap-2">
                                         <FileText className="w-4 h-4 text-brand-600" />
                                         <div>
-                                            <p className="font-bold text-slate-800">Digital Prescription Ready</p>
+                                            <p className="font-bold text-slate-800">{t('prescriptionReady')}</p>
                                             <p className="text-[10px] text-slate-500">{latestRx.diagnosis}</p>
                                         </div>
                                     </div>
@@ -227,7 +229,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                         onClick={() => navigate('/patient/prescriptions')}
                                         className="text-xs text-brand-600 font-bold hover:underline"
                                     >
-                                        View & Download →
+                                        {t('viewDownload')} →
                                     </button>
                                 </div>
                             )}
@@ -238,7 +240,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                 <div className="flex items-center gap-2">
                                     <Truck className="w-4 h-4 text-amber-600" />
                                     <div>
-                                        <p className="font-bold text-amber-900">Doorstep Delivery: {latestOrder.status}</p>
+                                        <p className="font-bold text-amber-900">{t('doorstepDelivery')}: {latestOrder.status}</p>
                                         <p className="text-[10px] text-amber-700">{latestOrder.estimatedDelivery}</p>
                                     </div>
                                 </div>
@@ -246,7 +248,7 @@ export const PatientDashboard: React.FC<PatientDashboardProps> = ({
                                     onClick={() => navigate('/patient/pharmacy')}
                                     className="text-xs text-amber-800 font-bold hover:underline"
                                 >
-                                    Track Courier →
+                                    {t('trackCourier')} →
                                 </button>
                             </div>
                         )}

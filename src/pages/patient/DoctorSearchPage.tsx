@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { searchDoctors } from '../../services/doctorService';
+import { useI18n } from '../../i18n';
 import { DoctorProfile } from '../../types';
 import { Stethoscope, Star, Clock, Video, Building2, Search, Filter, CheckCircle2 } from 'lucide-react';
 
 export const DoctorSearchPage: React.FC = () => {
     const navigate = useNavigate();
+    const { t } = useI18n();
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedSpecialty, setSelectedSpecialty] = useState('All');
 
@@ -31,8 +33,8 @@ export const DoctorSearchPage: React.FC = () => {
                             <Stethoscope className="w-5 h-5" />
                         </div>
                         <div>
-                            <h1 className="font-extrabold text-xl text-slate-900">Find Specialist Doctors</h1>
-                            <p className="text-xs text-slate-500">Connected telemedicine doctors available for consultation</p>
+                            <h1 className="font-extrabold text-xl text-slate-900">{t('findSpecialistDoctors')}</h1>
+                            <p className="text-xs text-slate-500">{t('doctorsAvailable')}</p>
                         </div>
                     </div>
 
@@ -44,7 +46,7 @@ export const DoctorSearchPage: React.FC = () => {
                                 type="text"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by doctor name, specialty, or condition..."
+                                placeholder={t('searchDoctors')}
                                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-10 pr-4 py-2.5 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500"
                             />
                         </div>
@@ -87,21 +89,21 @@ export const DoctorSearchPage: React.FC = () => {
 
                                 <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
                                     <div className="flex justify-between">
-                                        <span className="text-slate-500">Hospital:</span>
+                                        <span className="text-slate-500">{t('hospital')}:</span>
                                         <span className="font-bold text-slate-800">{doc.hospitalAffiliation}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-slate-500">Experience:</span>
-                                        <span className="font-bold text-slate-800">{doc.experienceYears} Years</span>
+                                        <span className="text-slate-500">{t('experience')}:</span>
+                                        <span className="font-bold text-slate-800">{doc.experienceYears} {t('years')}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-slate-500">Languages:</span>
+                                        <span className="text-slate-500">{t('languages')}:</span>
                                         <span className="font-bold text-slate-800">{doc.languages.join(', ')}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-1 border-t border-slate-200">
-                                        <span className="text-slate-500">Waiting Queue:</span>
+                                        <span className="text-slate-500">{t('waitingQueue')}:</span>
                                         <span className="font-extrabold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">
-                                            {doc.currentQueueCount} Patients
+                                            {doc.currentQueueCount} {t('patients')}
                                         </span>
                                     </div>
                                 </div>
@@ -112,7 +114,7 @@ export const DoctorSearchPage: React.FC = () => {
                                 className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
                             >
                                 <Video className="w-4 h-4" />
-                                <span>Start Tele-Consultation</span>
+                                <span>{t('startTeleConsultation')}</span>
                             </button>
                         </div>
                     ))}
